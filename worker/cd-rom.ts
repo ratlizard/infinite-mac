@@ -54,7 +54,15 @@ export function isValidSrcUrl(srcUrl: string) {
     } catch (e) {
         return false;
     }
-    const {protocol: srcProtocol, host: srcHost} = srcUrlParsed;
+    const {protocol: srcProtocol, host: srcHost, hostname} = srcUrlParsed;
+    // Local development: allow disk images served from this machine.
+    if (
+        import.meta.env.DEV &&
+        srcProtocol === "http:" &&
+        (hostname === "localhost" || hostname === "127.0.0.1")
+    ) {
+        return true;
+    }
     if (srcProtocol !== "https:") {
         return false;
     }
