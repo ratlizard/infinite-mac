@@ -30,6 +30,8 @@ export type RunDef = {
     ramSize?: MachineDefRAMSize;
     screenSize: ScreenSize;
     screenScale?: number;
+    // Scale the screen to fit the window, following it as it is resized.
+    screenFit?: boolean;
     disks: SystemDiskDef[];
     diskFiles: DiskFile[];
     cdromURLs: string[];
@@ -181,7 +183,8 @@ export function runDefFromUrl(urlString: string): RunDef | undefined {
     let screenScale: number | undefined = undefined;
     const screenScaleParam =
         searchParams.get("screen_scale") ?? searchParams.get("screenScale");
-    if (screenScaleParam) {
+    const screenFit = screenScaleParam === "fit";
+    if (screenScaleParam && !screenFit) {
         const scale = parseFloat(screenScaleParam);
         if (!isNaN(scale)) {
             screenScale = scale;
@@ -261,6 +264,7 @@ export function runDefFromUrl(urlString: string): RunDef | undefined {
         ramSize,
         screenSize,
         screenScale,
+        screenFit,
         ethernetProvider,
         cdromURLs,
         cdromPrefetchChunks,
@@ -352,7 +356,9 @@ export function runDefToUrl(runDef: RunDef, toEmbed: boolean = false): string {
                 : runDef.screenSize
         );
     }
-    if (runDef.screenScale && runDef.screenScale !== 1) {
+    if (runDef.screenFit) {
+        url.searchParams.set("screen_scale", "fit");
+    } else if (runDef.screenScale && runDef.screenScale !== 1) {
         url.searchParams.set("screen_scale", runDef.screenScale.toString());
     }
     if (ethernetProvider instanceof CloudflareWorkerEthernetProvider) {

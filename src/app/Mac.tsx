@@ -100,6 +100,7 @@ export default function Mac({
         ramSize,
         screenSize: screenSizeProp,
         screenScale: screenScaleProp,
+        screenFit,
         screenUpdateMessages,
         isEmbed,
         ethernetProvider,
@@ -533,6 +534,23 @@ export default function Mac({
         document.body.classList.toggle("embed", screenSizeProp === "embed");
     }, [screenSizeProp]);
 
+    useEffect(() => {
+        document.body.classList.toggle("screen-fit", Boolean(screenFit));
+        if (!screenFit) {
+            return;
+        }
+        const fit = () =>
+            setScale(
+                Math.min(
+                    window.innerWidth / screenWidth,
+                    window.innerHeight / screenHeight
+                )
+            );
+        fit();
+        window.addEventListener("resize", fit);
+        return () => window.removeEventListener("resize", fit);
+    }, [screenFit, screenWidth, screenHeight]);
+
     const handleFullScreenClick = () => {
         // Make the entire page go fullscreen (instead of just the screen
         // canvas) because iOS Safari does not maintain the aspect ratio of the
@@ -550,7 +568,9 @@ export default function Mac({
         }
 
         document.body.classList.toggle("fullscreen", isFullScreen);
-        if (isFullScreen && screenSizeProp !== "fullscreen") {
+        if (screenFit) {
+            // The resize listener below rescales.
+        } else if (isFullScreen && screenSizeProp !== "fullscreen") {
             const heightScale =
                 window.screen.availHeight / screenRef.current!.height;
             const widthScale =
@@ -559,7 +579,7 @@ export default function Mac({
         } else {
             setScale(undefined);
         }
-    }, [screenSizeProp]);
+    }, [screenSizeProp, screenFit]);
     useEffect(() => {
         document.addEventListener("fullscreenchange", handleFullScreenChange);
         document.addEventListener(
@@ -962,7 +982,10 @@ export default function Mac({
         "Mac-Screen-Smooth-Scaling": smoothScaling,
     });
     const drawersVisible =
-        !fullscreen && screenSizeProp !== "embed" && !isKeyboardVisible;
+        !fullscreen &&
+        screenSizeProp !== "embed" &&
+        !screenFit &&
+        !isKeyboardVisible;
 
     return (
         <>
@@ -983,7 +1006,8 @@ export default function Mac({
                     // These screen sizes always want fullscreen-like bezels
                     screenSizeProp === "fullscreen" ||
                     screenSizeProp === "window" ||
-                    screenSizeProp === "embed"
+                    screenSizeProp === "embed" ||
+                    screenFit
                 }
                 led={
                     (!emulatorLoaded && !debugPaused) ||
